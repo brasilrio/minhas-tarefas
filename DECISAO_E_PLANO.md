@@ -104,6 +104,8 @@ Decisões do usuário (2026-06-07):
 4. No repositório: **Settings → Pages → Source: "Deploy from a branch" → Branch: `main` / `(root)` → Save**.
 5. Aguarde ~1 min. O GitHub mostra o endereço, algo como: `https://SEU_USUARIO.github.io/minhas-tarefas/`. **Guarde esse endereço.**
 
+> ✅ **JÁ FEITO** — URL real: **https://brasilrio.github.io/minhas-tarefas/**
+
 ### Parte 2 — Criar o acesso ao Google Calendar (OAuth Client ID)
 1. Acesse https://console.cloud.google.com e faça login.
 2. Crie um projeto (menu no topo → "Novo projeto" → dê um nome → Criar).
@@ -114,7 +116,7 @@ Decisões do usuário (2026-06-07):
    - Em **Usuários de teste**, adicione seu próprio e-mail do Google (`eduardoermakoff@gmail.com`). *(Sem isso o login é bloqueado.)*
 5. Crie a credencial: **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**.
    - Tipo de aplicativo: **Aplicativo da Web**.
-   - Em **Origens JavaScript autorizadas**, adicione o **endereço da Parte 1** (ex.: `https://SEU_USUARIO.github.io`). Use só o domínio, sem a barra final nem o subcaminho.
+   - Em **Origens JavaScript autorizadas**, adicione: `https://brasilrio.github.io` (só o domínio, sem barra final).
    - Criar → copie o **Client ID** (termina em `...apps.googleusercontent.com`).
 
 ### Parte 3 — Conectar e instalar no Android
