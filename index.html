@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<title>Minhas Tarefas</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-2: #273449;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --green: #22c55e;
+    --line: #334155;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    min-height: 100vh;
+  }
+  header {
+    padding: 18px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  header h1 { font-size: 20px; margin: 0; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 12px 96px; }
+
+  /* Google connection */
+  .gbar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 12px; margin: 8px 0 14px;
+    font-size: 13px;
+  }
+  .gbar .status { color: var(--muted); flex: 1; min-width: 120px; }
+  .gbar .status.ok { color: var(--green); }
+
+  button, select, input, textarea { font-family: inherit; font-size: 15px; }
+  .btn {
+    background: var(--accent); color: #042b3a; border: none;
+    border-radius: 10px; padding: 9px 12px; font-weight: 600; cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn.sm { padding: 6px 10px; font-size: 13px; }
+  .btn:active { transform: scale(0.97); }
+
+  /* Add form */
+  .add {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px; margin-bottom: 16px;
+  }
+  .add input[type="text"] {
+    width: 100%; background: var(--card-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px;
+    margin-bottom: 10px;
+  }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .prio-pick { display: flex; gap: 6px; }
+  .prio-pick button {
+    width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent;
+    cursor: pointer; opacity: 0.45; transition: opacity .15s, border-color .15s;
+  }
+  .prio-pick button.on { opacity: 1; border-color: #fff; }
+  .p-red { background: var(--red); }
+  .p-yellow { background: var(--yellow); }
+  .p-green { background: var(--green); }
+  .add select, .add input[type="datetime-local"] {
+    background: var(--card-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+    flex: 1; min-width: 130px;
+  }
+  .add .row + .row { margin-top: 10px; }
+
+  /* List */
+  ul#list { list-style: none; margin: 0; padding: 0; }
+  li.task {
+    background: var(--card); border: 1px solid var(--line);
+    border-left: 6px solid var(--green);
+    border-radius: 12px; padding: 10px 10px 10px 8px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+    touch-action: pan-y;
+  }
+  li.task.prio-red { border-left-color: var(--red); }
+  li.task.prio-yellow { border-left-color: var(--yellow); }
+  li.task.prio-green { border-left-color: var(--green); }
+  li.task.dragging { opacity: 0.5; }
+  li.task.drop-target { border-top: 2px dashed var(--accent); }
+  .handle {
+    cursor: grab; color: var(--muted); font-size: 20px; padding: 4px 6px;
+    touch-action: none; user-select: none; line-height: 1;
+  }
+  .chk {
+    width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--muted);
+    flex: 0 0 auto; cursor: pointer; display: grid; place-items: center; color: var(--bg);
+  }
+  .chk.done { background: var(--accent); border-color: var(--accent); }
+  .meta { flex: 1; min-width: 0; }
+  .meta .txt { font-size: 15px; word-break: break-word; }
+  li.task.done .meta .txt { text-decoration: line-through; color: var(--muted); }
+  .meta .sub { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .sub .synced { color: var(--green); }
+  .dot {
+    width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto; cursor: pointer; border: 2px solid rgba(255,255,255,.25);
+  }
+  .del { background: transparent; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px 6px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+    background: #020617; border: 1px solid var(--line); color: var(--text);
+    padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0;
+    transition: opacity .2s; pointer-events: none; z-index: 50; max-width: 90%;
+  }
+  .toast.show { opacity: 1; }
+  details.settings { margin: 8px 0 0; }
+  details.settings summary { color: var(--muted); font-size: 13px; cursor: pointer; }
+  details.settings input { width: 100%; background: var(--card-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-top: 8px; }
+  details.settings p { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>✅ Minhas Tarefas</h1>
+  </header>
+
+  <div class="gbar">
+    <span id="gstatus" class="status">Google Calendar: desconectado</span>
+    <button id="gconnect" class="btn sm">Conectar Google</button>
+    <button id="gsync" class="btn sm ghost" style="display:none">Sincronizar pendentes</button>
+  </div>
+
+  <details class="settings">
+    <summary>⚙️ Configuração (Client ID do Google)</summary>
+    <input id="clientId" type="text" placeholder="Cole aqui seu OAuth Client ID (...apps.googleusercontent.com)" />
+    <p>Necessário só uma vez. Veja o passo a passo no arquivo <b>DECISAO_E_PLANO.md</b>.</p>
+  </details>
+
+  <div class="add">
+    <input id="newText" type="text" placeholder="Nova tarefa..." />
+    <div class="row">
+      <div class="prio-pick" id="prioPick">
+        <button type="button" class="p-red" data-p="red" title="Urgente"></button>
+        <button type="button" class="p-yellow" data-p="yellow" title="Importante"></button>
+        <button type="button" class="p-green on" data-p="green" title="Tranquilo"></button>
+      </div>
+      <input id="newDue" type="datetime-local" />
+    </div>
+    <div class="row">
+      <select id="newRemind" title="Alarme">
+        <option value="">Sem alarme</option>
+        <option value="0">Na hora</option>
+        <option value="10" selected>10 min antes</option>
+        <option value="30">30 min antes</option>
+        <option value="60">1 hora antes</option>
+        <option value="1440">1 dia antes</option>
+      </select>
+      <button id="addBtn" class="btn" style="flex:1">Adicionar</button>
+    </div>
+  </div>
+
+  <ul id="list"></ul>
+  <div id="empty" class="empty">Nenhuma tarefa ainda. Adicione a primeira! 👆</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+/* ============ Estado e persistência ============ */
+const SCOPE = "https://www.googleapis.com/auth/calendar.events";
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const COLOR_ID = { red: "11", yellow: "5", green: "10" }; // Tomate / Banana / Manjericão
+const PRIO_LABEL = { red: "Urgente", yellow: "Importante", green: "Tranquilo" };
+
+let tasks = load();
+let newPrio = "green";
+let accessToken = null;
+let tokenClient = null;
+
+function load() {
+  try { return JSON.parse(localStorage.getItem("tasks") || "[]"); }
+  catch { return []; }
+}
+function save() { localStorage.setItem("tasks", JSON.stringify(tasks)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+/* ============ Toast ============ */
+let toastT;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+/* ============ Render ============ */
+const listEl = document.getElementById("list");
+const emptyEl = document.getElementById("empty");
+
+function fmtDue(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function render() {
+  listEl.innerHTML = "";
+  emptyEl.style.display = tasks.length ? "none" : "block";
+  for (const t of tasks) {
+    const li = document.createElement("li");
+    li.className = "task prio-" + t.priority + (t.done ? " done" : "");
+    li.dataset.id = t.id;
+
+    const handle = document.createElement("div");
+    handle.className = "handle"; handle.textContent = "≡";
+    handle.title = "Arraste para reordenar";
+
+    const chk = document.createElement("div");
+    chk.className = "chk" + (t.done ? " done" : "");
+    chk.innerHTML = t.done ? "✓" : "";
+    chk.onclick = () => toggleDone(t.id);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const txt = document.createElement("div");
+    txt.className = "txt"; txt.textContent = t.text;
+    const sub = document.createElement("div");
+    sub.className = "sub";
+    let subHtml = `<span>${PRIO_LABEL[t.priority]}</span>`;
+    if (t.due) subHtml += `<span>🗓️ ${fmtDue(t.due)}</span>`;
+    if (t.gcalEventId) subHtml += `<span class="synced">✓ no Calendar</span>`;
+    sub.innerHTML = subHtml;
+    meta.appendChild(txt); meta.appendChild(sub);
+
+    const dot = document.createElement("div");
+    dot.className = "dot"; dot.style.background = `var(--${t.priority})`;
+    dot.title = "Tocar para mudar prioridade";
+    dot.onclick = () => cyclePrio(t.id);
+
+    const del = document.createElement("button");
+    del.className = "del"; del.textContent = "🗑️";
+    del.onclick = () => removeTask(t.id);
+
+    li.append(handle, chk, meta, dot, del);
+    attachDrag(li, handle);
+    listEl.appendChild(li);
+  }
+}
+
+/* ============ Ações de tarefa ============ */
+function addTask() {
+  const input = document.getElementById("newText");
+  const text = input.value.trim();
+  if (!text) { input.focus(); return; }
+  const dueVal = document.getElementById("newDue").value;
+  const remindVal = document.getElementById("newRemind").value;
+  const t = {
+    id: uid(),
+    text,
+    priority: newPrio,
+    done: false,
+    due: dueVal ? new Date(dueVal).toISOString() : null,
+    reminderMinutes: remindVal === "" ? null : Number(remindVal),
+    gcalEventId: null,
+  };
+  tasks.unshift(t);
+  save(); render();
+  input.value = ""; document.getElementById("newDue").value = "";
+  if (t.due) syncTask(t).catch(() => {});
+}
+
+function toggleDone(id) {
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  t.done = !t.done; save(); render();
+  // Concluiu uma tarefa com evento: remove o alarme do Calendar.
+  if (t.done && t.gcalEventId) {
+    gcalDelete(t.gcalEventId).then(() => { t.gcalEventId = null; save(); render(); }).catch(() => {});
+  }
+}
+
+function cyclePrio(id) {
+  const order = ["green", "yellow", "red"];
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  t.priority = order[(order.indexOf(t.priority) + 1) % 3];
+  save(); render();
+  if (t.gcalEventId) syncTask(t).catch(() => {});
+}
+
+function removeTask(id) {
+  const t = tasks.find(x => x.id === id); if (!t) return;
+  if (t.gcalEventId) gcalDelete(t.gcalEventId).catch(() => {});
+  tasks = tasks.filter(x => x.id !== id);
+  save(); render();
+}
+
+/* ============ Arrastar para reordenar (touch + mouse) ============ */
+let dragId = null;
+function attachDrag(li, handle) {
+  handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    dragId = li.dataset.id;
+    li.classList.add("dragging");
+    handle.setPointerCapture(e.pointerId);
+
+    const onMove = (ev) => {
+      const y = ev.clientY;
+      const items = [...listEl.querySelectorAll("li.task:not(.dragging)")];
+      let placed = false;
+      for (const item of items) {
+        const r = item.getBoundingClientRect();
+        if (y < r.top + r.height / 2) {
+          listEl.insertBefore(li, item); placed = true; break;
+        }
+      }
+      if (!placed) listEl.appendChild(li);
+    };
+    const onUp = () => {
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      li.classList.remove("dragging");
+      // Reconstrói a ordem do array a partir do DOM.
+      const ids = [...listEl.querySelectorAll("li.task")].map(el => el.dataset.id);
+      tasks.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+      save();
+      dragId = null;
+    };
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+  });
+}
+
+/* ============ Google Calendar (OAuth + API) ============ */
+function getClientId() {
+  return (localStorage.getItem("clientId") || "").trim();
+}
+function setGStatus(text, ok) {
+  const el = document.getElementById("gstatus");
+  el.textContent = text; el.classList.toggle("ok", !!ok);
+}
+
+function initTokenClient() {
+  const cid = getClientId();
+  if (!cid || !window.google || !google.accounts) return false;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cid,
+    scope: SCOPE,
+    callback: (resp) => {
+      if (resp.error) { toast("Falha no login: " + resp.error); return; }
+      accessToken = resp.access_token;
+      setGStatus("Google Calendar: conectado", true);
+      document.getElementById("gsync").style.display = "";
+      toast("Conectado ao Google Calendar 🎉");
+    },
+  });
+  return true;
+}
+
+function ensureToken(interactive) {
+  return new Promise((resolve, reject) => {
+    if (accessToken) return resolve(accessToken);
+    if (!tokenClient && !initTokenClient()) {
+      return reject(new Error("Configure o Client ID primeiro."));
+    }
+    const prevCb = tokenClient.callback;
+    tokenClient.callback = (resp) => {
+      tokenClient.callback = prevCb;
+      if (resp.error) return reject(new Error(resp.error));
+      accessToken = resp.access_token;
+      setGStatus("Google Calendar: conectado", true);
+      document.getElementById("gsync").style.display = "";
+      resolve(accessToken);
+    };
+    tokenClient.requestAccessToken({ prompt: interactive ? "" : "" });
+  });
+}
+
+async function gcalFetch(url, options, retry = true) {
+  const token = await ensureToken(false);
+  const res = await fetch(url, {
+    ...options,
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json", ...(options.headers || {}) },
+  });
+  if (res.status === 401 && retry) {
+    accessToken = null;
+    return gcalFetch(url, options, false);
+  }
+  if (!res.ok && res.status !== 404) throw new Error("Calendar API " + res.status);
+  return res;
+}
+
+function eventBody(t) {
+  const start = new Date(t.due);
+  const end = new Date(start.getTime() + 30 * 60000);
+  const body = {
+    summary: t.text,
+    description: "Tarefa (" + PRIO_LABEL[t.priority] + ") criada pelo app Minhas Tarefas.",
+    colorId: COLOR_ID[t.priority],
+    start: { dateTime: start.toISOString(), timeZone: TZ },
+    end: { dateTime: end.toISOString(), timeZone: TZ },
+  };
+  if (t.reminderMinutes !== null && t.reminderMinutes !== undefined) {
+    body.reminders = { useDefault: false, overrides: [{ method: "popup", minutes: t.reminderMinutes }] };
+  } else {
+    body.reminders = { useDefault: false, overrides: [] };
+  }
+  return body;
+}
+
+async function syncTask(t) {
+  if (!t.due) return;
+  const body = eventBody(t);
+  if (t.gcalEventId) {
+    await gcalFetch(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events/" + t.gcalEventId,
+      { method: "PATCH", body: JSON.stringify(body) }
+    );
+  } else {
+    const res = await gcalFetch(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      { method: "POST", body: JSON.stringify(body) }
+    );
+    const ev = await res.json();
+    t.gcalEventId = ev.id;
+    save(); render();
+  }
+}
+
+async function gcalDelete(eventId) {
+  await gcalFetch(
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events/" + eventId,
+    { method: "DELETE" }
+  );
+}
+
+async function syncPending() {
+  const pend = tasks.filter(t => t.due && !t.done && !t.gcalEventId);
+  if (!pend.length) { toast("Nada pendente para sincronizar."); return; }
+  toast("Sincronizando " + pend.length + " tarefa(s)...");
+  for (const t of pend) {
+    try { await syncTask(t); } catch (e) { toast("Erro ao sincronizar: " + e.message); break; }
+  }
+  toast("Sincronização concluída ✓");
+}
+
+/* ============ Eventos da UI ============ */
+document.getElementById("addBtn").onclick = addTask;
+document.getElementById("newText").addEventListener("keydown", (e) => { if (e.key === "Enter") addTask(); });
+
+document.getElementById("prioPick").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-p]"); if (!b) return;
+  newPrio = b.dataset.p;
+  [...e.currentTarget.children].forEach(c => c.classList.toggle("on", c === b));
+});
+
+const cidInput = document.getElementById("clientId");
+cidInput.value = getClientId();
+cidInput.addEventListener("change", () => {
+  localStorage.setItem("clientId", cidInput.value.trim());
+  accessToken = null; tokenClient = null;
+  toast("Client ID salvo.");
+});
+
+document.getElementById("gconnect").onclick = () => {
+  if (!getClientId()) { toast("Cole seu Client ID em ⚙️ Configuração primeiro."); return; }
+  ensureToken(true).catch(e => toast(e.message));
+};
+document.getElementById("gsync").onclick = () => syncPending();
+
+/* ============ Service worker (offline) ============ */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+
+render();
+</script>
+</body>
+</html>
